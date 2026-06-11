@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Mint PDR and Glass — Invoice System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --mint:#1D9E75;--mint-dk:#0F6E56;--mint-lt:#E1F5EE;--mint-md:#5DCAA5;
+  --bg:#F7F7F5;--surf:#FFFFFF;--bdr:rgba(0,0,0,0.08);--bdr2:rgba(0,0,0,0.14);
+  --tx:#1A1A18;--tx2:#55554F;--tx3:#9A9A93;
+  --red:#E24B4A;--amber:#BA7517;--green:#1D9E75;
+  --r:10px;--rl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;min-height:100vh}
+
+/* TOP BAR */
+.topbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:56px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 var(--bdr)}
+.tlogo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.tname{font-size:14px;font-weight:500;letter-spacing:2px;color:var(--mint)}
+.tsub{font-size:9px;color:var(--tx3);letter-spacing:2px}
+.tnav{display:flex;margin-left:1.25rem}
+.ntab{background:none;border:none;border-bottom:2px solid transparent;padding:0 .9rem;height:56px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ntab:hover{color:var(--tx)}.ntab.active{color:var(--mint);border-bottom-color:var(--mint)}
+.tright{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tpill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;text-decoration:none;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:background .15s;white-space:nowrap}
+.tpill-g{background:var(--mint-lt);color:var(--mint-dk)}.tpill-g:hover{background:#c5eede}
+
+/* LAYOUT */
+.main{max-width:940px;margin:0 auto;padding:1.5rem 1.25rem 5rem}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* STATUS BAR */
+.status{display:none;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--r);font-size:13px;font-weight:500;margin-bottom:1rem}
+.status.show{display:flex}
+.status.ok{background:#edfaf4;color:var(--mint-dk);border:1px solid #9FE1CB}
+.status.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.status.load{background:#eff8ff;color:#1e40af;border:1px solid #bfdbfe}
+.status.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.spinner{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CARDS */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.4rem 1.6rem;margin-bottom:.9rem}
+.card-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:.9rem}
+
+/* INVOICE HEADER */
+.inv-hdr{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.4rem 1.6rem;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.9rem}
+.inv-co{font-size:16px;font-weight:500;letter-spacing:2px;color:var(--mint)}
+.inv-tag{font-size:9px;color:var(--tx3);letter-spacing:2.5px;margin-top:1px}
+.inv-addr{font-size:11px;color:var(--tx2);margin-top:5px;line-height:1.7}
+.inv-word{font-size:24px;font-weight:300;letter-spacing:4px;font-family:'DM Mono',monospace}
+.inv-num{font-size:18px;font-weight:500;color:var(--mint);font-family:'DM Mono',monospace;margin-top:2px}
+.inv-dt{font-size:11px;color:var(--tx2);margin-top:2px}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem}
+
+/* FIELDS */
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label{font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px}
+.fld input,.fld select,.fld textarea{width:100%;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none;transition:border-color .15s,box-shadow .15s}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(29,158,117,.1);background:#fff}
+.fld textarea{resize:vertical;line-height:1.6;min-height:72px}
+
+/* CHIPS */
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.chip{font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid var(--bdr2);background:var(--surf);color:var(--tx2);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .15s;white-space:nowrap}
+.chip:hover{border-color:var(--mint);color:var(--mint);background:var(--mint-lt)}
+.chip-green{border-color:var(--mint);color:var(--mint-dk);background:var(--mint-lt)}
+
+/* LINE TABLE */
+.ltbl{width:100%;border-collapse:collapse}
+.ltbl th{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);padding:0 5px 8px;text-align:left;border-bottom:1px solid var(--bdr)}
+.ltbl th.r{text-align:right}
+.ltbl td{padding:3px 2px;vertical-align:middle}
+.ltbl td select,.ltbl td input[type=text],.ltbl td input[type=number]{width:100%;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid var(--bdr2);border-radius:8px;background:var(--bg);color:var(--tx);outline:none;transition:border-color .15s}
+.ltbl td select:focus,.ltbl td input:focus{border-color:var(--mint);background:#fff}
+.ltbl td input[type=number]{text-align:right}
+.delbtn{background:none;border:none;cursor:pointer;color:var(--tx3);padding:4px 5px;border-radius:6px;display:flex;align-items:center;transition:all .15s}
+.delbtn:hover{color:var(--red);background:#fef2f2}
+.addbtn{margin-top:9px;background:none;border:1px dashed var(--mint);color:var(--mint);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:var(--r);cursor:pointer;transition:background .15s}
+.addbtn:hover{background:var(--mint-lt)}
+
+/* TOTALS */
+.trow{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--tx2)}
+.trow span:last-child{font-weight:500;color:var(--tx);font-family:'DM Mono',monospace}
+.tdiv{border:none;border-top:1px solid var(--bdr);margin:6px 0}
+.ttotal{font-size:15px;font-weight:500}
+.ttotal span:last-child{color:var(--mint)}
+
+/* BUTTONS */
+.btnp{display:inline-flex;align-items:center;gap:6px;background:var(--mint);color:#fff;border:none;border-radius:var(--r);padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,transform .1s;text-decoration:none}
+.btnp:hover{background:var(--mint-dk)}.btnp:active{transform:scale(.98)}.btnp:disabled{opacity:.5;cursor:not-allowed}
+.btns{display:inline-flex;align-items:center;gap:5px;background:var(--surf);color:var(--tx);border:1px solid var(--bdr2);border-radius:var(--r);padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:background .15s;text-decoration:none}
+.btns:hover{background:var(--bg)}
+.btng{display:inline-flex;align-items:center;gap:5px;background:none;color:var(--tx2);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:background .15s}
+.btng:hover{background:var(--bg)}
+.btn-red{background:none;color:var(--red);border:1px solid #fecaca;border-radius:var(--r);padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:background .15s}
+.btn-red:hover{background:#fef2f2}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+
+/* STAT CARDS */
+.sc{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:1rem 1.25rem}
+.sc-lbl{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px}
+.sc-val{font-size:21px;font-weight:500;font-family:'DM Mono',monospace}
+.sc-val.green{color:var(--mint)}.sc-val.amber{color:var(--amber)}.sc-val.red{color:var(--red)}
+
+/* LEDGER */
+.ltoolbar{display:flex;gap:.5rem;align-items:center;margin-bottom:.9rem;flex-wrap:wrap}
+.srch{flex:1;min-width:180px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--surf);color:var(--tx);outline:none}
+.srch:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.filter-sel{padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--surf);color:var(--tx);outline:none;cursor:pointer}
+.lwrap{overflow-x:auto;background:var(--surf);border-radius:var(--rl);border:1px solid var(--bdr)}
+.ltab{width:100%;border-collapse:collapse;font-size:11px}
+.ltab th{background:var(--bg);padding:6px 6px;text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.3px;color:var(--tx3);border-bottom:1px solid var(--bdr);white-space:nowrap}
+.ltab td{padding:6px 6px;border-bottom:1px solid var(--bdr);vertical-align:top}
+.ltab tr:last-child td{border-bottom:none}
+.ltab tr:hover td{background:#f5fdf9}
+.ibadge{display:inline-block;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:5px;background:var(--mint-lt);color:var(--mint-dk)}
+
+/* PAYMENT STATUS BADGES */
+.ps{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.ps-paid{background:#edfaf4;color:#0F6E56;border:1px solid #9FE1CB}
+.ps-pending{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.ps-overdue{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+/* DASHBOARD */
+.dash2{display:grid;grid-template-columns:2fr 1fr;gap:.9rem;margin-bottom:.9rem}
+.chart-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.4rem 1.6rem}
+.chart-title{font-size:12px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem}
+.svc-bar-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.svc-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2)}
+.svc-bar-track{height:5px;background:#f0f0ee;border-radius:3px;overflow:hidden}
+.svc-bar-fill{height:100%;background:var(--mint);border-radius:3px;transition:width .5s}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surf);border-radius:var(--rl);padding:1.75rem 2rem;max-width:480px;width:95%;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:500;margin-bottom:1.25rem}
+.modal-actions{display:flex;gap:.5rem;margin-top:1.25rem;justify-content:flex-end}
+
+/* SETTINGS */
+.set-row{display:flex;flex-direction:column;gap:4px;padding:.9rem 0;border-bottom:1px solid var(--bdr)}
+.set-row:first-child{padding-top:0}.set-row:last-child{border-bottom:none;padding-bottom:0}
+.set-lbl{font-size:13px;font-weight:500}
+.set-desc{font-size:12px;color:var(--tx3);margin-bottom:4px}
+.set-input{max-width:420px;padding:7px 10px;font-size:13px;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;width:100%}
+.set-input:focus{border-color:var(--mint);background:#fff}
+.set-ta{max-width:520px;padding:7px 10px;font-size:13px;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;line-height:1.6;width:100%}
+.set-ta:focus{border-color:var(--mint);background:#fff}
+
+/* TIPS */
+.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.tip-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.2rem 1.4rem}
+.tip-icon{font-size:18px;margin-bottom:.4rem}
+.tip-title{font-size:13px;font-weight:500;margin-bottom:.3rem}
+.tip-body{font-size:12px;color:var(--tx2);line-height:1.6}
+
+.empty{text-align:center;padding:3rem;color:var(--tx3);font-size:13px;line-height:1.8}
+
+@media(max-width:680px){
+  .g2,.g3,.g4,.dash2,.tips-grid{grid-template-columns:1fr}
+  .inv-hdr{flex-direction:column;gap:1rem}
+  .topbar{padding:0 1rem}
+  .tnav{display:none}
+  .main{padding:1rem 1rem 5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a class="tlogo" href="#">
+    <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
+      <polygon points="18,2 34,18 18,34 2,18" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5.5" fill="none" stroke="#1D9E75" stroke-width="1.2"/>
+      <line x1="18" y1="10" x2="18" y2="26" stroke="#1D9E75" stroke-width="1"/>
+      <line x1="10" y1="18" x2="26" y2="18" stroke="#888780" stroke-width="1"/>
+    </svg>
+    <div><div class="tname">MINT</div><div class="tsub">PDR AND GLASS</div></div>
+  </a>
+  <nav class="tnav">
+    <button class="ntab active" onclick="switchTab('invoice',this)">New invoice</button>
+    <button class="ntab" onclick="switchTab('ledger',this)">Ledger</button>
+    <button class="ntab" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button class="ntab" onclick="switchTab('settings',this)">Settings</button>
+    <button class="ntab" onclick="switchTab('tips',this)">Tips</button>
+  </nav>
+  <div class="tright">
+    <span id="overdue-badge" style="display:none;background:#fef2f2;color:#991b1b;font-size:11px;font-weight:500;padding:4px 10px;border-radius:999px;border:1px solid #fecaca"></span>
+    <a class="tpill tpill-g" href="https://docs.google.com/spreadsheets/d/1WW98GGw7180y6kgHsizyVjFcUyx9T9-4NinosuMgNjg" target="_blank">↗ Ledger Sheet</a>
+  </div>
+</div>
+
+<div class="main">
+<div class="status" id="status"><div class="spinner" id="sp" style="display:none"></div><span id="stxt"></span></div>
+
+<!-- ══════════════ INVOICE TAB ══════════════ -->
+<div class="tab-content active" id="tab-invoice">
+
+  <div class="inv-hdr">
+    <div style="display:flex;align-items:flex-start;gap:1rem">
+      <svg width="46" height="46" viewBox="0 0 50 50" fill="none">
+        <polygon points="25,3 47,25 25,47 3,25" fill="#E1F5EE" stroke="#1D9E75" stroke-width="2"/>
+        <polygon points="25,10 40,25 25,40 10,25" fill="none" stroke="#888780" stroke-width=".7" opacity=".5"/>
+        <circle cx="25" cy="25" r="7.5" fill="none" stroke="#1D9E75" stroke-width="1.5"/>
+        <line x1="25" y1="14" x2="25" y2="36" stroke="#1D9E75" stroke-width="1.2"/>
+        <line x1="14" y1="25" x2="36" y2="25" stroke="#888780" stroke-width="1.2"/>
+      </svg>
+      <div>
+        <div class="inv-co">MINT</div>
+        <div class="inv-tag">— PDR AND GLASS —</div>
+        <div class="inv-addr">6957 Waltham Avenue, Burnaby, BC<br>glass@mintautobody.ca</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="inv-word">INVOICE</div>
+      <div class="inv-num" id="inv-num">#0001</div>
+      <div class="inv-dt" id="inv-date"></div>
+    </div>
+  </div>
+
+  <!-- BILLING -->
+  <div class="card">
+    <div class="card-title">Billing</div>
+    <div class="g2">
+      <div class="fld"><label>Bill to</label><input id="bill-to" value="Mint Auto Body"/></div>
+      <div class="fld"><label>Claim #</label><input id="claim" placeholder="e.g. ICBC-2026-04471"/></div>
+    </div>
+  </div>
+
+  <!-- VEHICLE -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <div class="card-title" style="margin:0">Vehicle information</div>
+      <div id="rv-wrap" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--tx3)">Recent:</span>
+        <div class="chip-row" id="rv-chips" style="margin:0"></div>
+      </div>
+    </div>
+    <div class="g3" style="margin-bottom:.6rem">
+      <div class="fld"><label>Year</label><input id="v-yr" placeholder="2022" maxlength="4"/></div>
+      <div class="fld"><label>Make</label><input id="v-mk" placeholder="Toyota"/></div>
+      <div class="fld"><label>Model</label><input id="v-mo" placeholder="RAV4"/></div>
+    </div>
+    <div class="g3">
+      <div class="fld"><label>VIN</label><input id="v-vin" placeholder="17-digit VIN" maxlength="17"/></div>
+      <div class="fld"><label>Odometer (km)</label><input id="v-odo" placeholder="67420"/></div>
+      <div class="fld"><label>RO #</label><input id="v-ro" placeholder="Repair order #" oninput="tryAutoFill()"/></div>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="card">
+    <div class="card-title">Services performed</div>
+    <div id="fav-wrap" style="margin-bottom:.75rem;display:none">
+      <div style="font-size:11px;color:var(--tx3);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Quick add</div>
+      <div class="chip-row" id="fav-chips"></div>
+    </div>
+    <table class="ltbl">
+      <thead><tr>
+        <th style="width:38%">Service</th>
+        <th style="width:22%">Line notes</th>
+        <th class="r" style="width:13%">List price ($)</th>
+        <th class="r" style="width:13%">After 20% off</th>
+        <th style="width:7%"></th>
+      </tr></thead>
+      <tbody id="lines"></tbody>
+    </table>
+    <button class="addbtn" onclick="addLine()">+ Add service line</button>
+    <div style="display:flex;justify-content:flex-end;margin-top:1.4rem">
+      <div style="min-width:205px">
+        <div class="trow"><span>List price total</span><span id="list-total">$0.00</span></div>
+        <div class="trow" style="color:var(--red)"><span>Discount (20%)</span><span id="discount-amt" style="color:var(--red)">-$0.00</span></div>
+        <div class="trow"><span>Subtotal</span><span id="sub">$0.00</span></div>
+        <div class="trow"><span id="gst-lbl">GST (5%)</span><span id="gst">$0.00</span></div>
+        <hr class="tdiv">
+        <div class="trow ttotal"><span>Total</span><span id="ttl">$0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="card">
+    <div class="card-title">Invoice notes</div>
+    <div class="fld">
+      <textarea id="inv-notes" placeholder="e.g. Static calibration performed post windshield replacement. All systems verified. Vehicle driven 25km post-calibration to confirm ACC lock. Payment terms: Net 30."></textarea>
+    </div>
+  </div>
+
+  <!-- SEND -->
+  <div class="card">
+    <div class="card-title">Send &amp; record</div>
+    <div class="g2" style="margin-bottom:.65rem">
+      <div class="fld"><label>Recipient email</label><input id="e-to" type="email" placeholder="invoices@mintautobody.ca"/></div>
+      <div class="fld"><label>Subject</label><input id="e-sub"/></div>
+    </div>
+    <div class="fld" style="margin-bottom:1.1rem">
+      <label>Email message</label>
+      <input id="e-msg" placeholder="Please find the invoice for services performed."/>
+    </div>
+    <div id="edit-banner" style="display:none;align-items:center;gap:10px;background:#eff8ff;border:1px solid #bfdbfe;border-radius:var(--r);padding:10px 14px;margin-bottom:.75rem;font-size:13px;color:#1e40af;font-weight:500">
+      ✏️ Editing mode — changes will update the existing invoice record
+      <button class="btng" style="margin-left:auto;font-size:12px;padding:4px 10px" onclick="cancelEdit()">✕ Cancel edit</button>
+    </div>
+    <div class="actions">
+      <button class="btnp" id="main-btn" onclick="doAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Log to Sheets + Send Gmail
+      </button>
+      <button class="btnp" id="save-edit-btn" onclick="saveEdit()" style="display:none;background:#1e40af">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save changes
+      </button>
+      <button class="btns" onclick="logToSheets()">Log only</button>
+      <button class="btns" onclick="sendGmail()">Gmail only</button>
+      <button class="btns" onclick="doPrint()">Print / PDF</button>
+      <button class="btng" onclick="newInvoice()">↺ New invoice</button>
+    </div>
+    <div style="margin-top:.75rem">
+      <a style="font-size:12px;color:var(--mint);text-decoration:none" href="https://docs.google.com/spreadsheets/d/1WW98GGw7180y6kgHsizyVjFcUyx9T9-4NinosuMgNjg" target="_blank">↗ Open Invoice Ledger in Google Sheets</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ LEDGER TAB ══════════════ -->
+<div class="tab-content" id="tab-ledger">
+  <div class="g4" style="margin-bottom:1rem">
+    <div class="sc"><div class="sc-lbl">Total invoices</div><div class="sc-val" id="s-cnt">0</div></div>
+    <div class="sc"><div class="sc-lbl">All-time revenue</div><div class="sc-val green" id="s-rev">$0.00</div></div>
+    <div class="sc"><div class="sc-lbl">This month</div><div class="sc-val green" id="s-mo">$0.00</div></div>
+    <div class="sc"><div class="sc-lbl">Unpaid / overdue</div><div class="sc-val amber" id="s-unpaid">$0.00</div></div>
+  </div>
+  <div class="ltoolbar">
+    <input class="srch" id="search" placeholder="Search invoice #, vehicle, claim, service..." oninput="renderLedger()"/>
+    <select class="filter-sel" id="month-filter" onchange="renderLedger()">
+      <option value="">All months</option>
+    </select>
+    <select class="filter-sel" id="status-filter" onchange="renderLedger()">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="paid">Paid</option>
+      <option value="overdue">Overdue</option>
+    </select>
+    <button class="btns" onclick="exportCSV()">↓ CSV</button>
+    <a class="btns" href="https://docs.google.com/spreadsheets/d/1WW98GGw7180y6kgHsizyVjFcUyx9T9-4NinosuMgNjg" target="_blank" style="text-decoration:none">↗ Sheets</a>
+    <button class="btng" onclick="clearLedger()">Clear local</button>
+  </div>
+  <div id="month-summary" style="display:none;margin-bottom:.9rem"></div>
+  <div class="lwrap">
+    <table class="ltab">
+      <thead><tr>
+        <th>Inv #</th><th>Date</th><th>By</th><th>Claim #</th><th>Vehicle · RO#</th><th>Services</th><th>Notes</th><th style="text-align:right">List / Final</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ DASHBOARD TAB ══════════════ -->
+<div class="tab-content" id="tab-dashboard">
+  <div class="g4" style="margin-bottom:1rem">
+    <div class="sc"><div class="sc-lbl">All-time revenue</div><div class="sc-val green" id="d-rev">$0.00</div></div>
+    <div class="sc"><div class="sc-lbl">This month</div><div class="sc-val green" id="d-mo">$0.00</div></div>
+    <div class="sc"><div class="sc-lbl">Avg invoice value</div><div class="sc-val" id="d-avg">$0.00</div></div>
+    <div class="sc"><div class="sc-lbl">GST collected</div><div class="sc-val" id="d-gst">$0.00</div></div>
+  </div>
+  <div class="dash2">
+    <div class="chart-card"><div class="chart-title">Monthly revenue</div><canvas id="rev-chart" height="190"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Top services by revenue</div><div id="top-svcs"></div></div>
+  </div>
+  <div class="dash2">
+    <div class="chart-card"><div class="chart-title">Invoices per month</div><canvas id="cnt-chart" height="170"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Revenue by category</div><canvas id="cat-chart" height="170"></canvas></div>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS TAB ══════════════ -->
+<div class="tab-content" id="tab-settings">
+  <div class="card">
+    <div class="card-title">Email defaults</div>
+    <div class="set-row">
+      <div class="set-lbl">Default recipient email</div>
+      <div class="set-desc">Pre-fills recipient on every new invoice</div>
+      <input class="set-input" id="set-email" placeholder="invoices@mintautobody.ca"/>
+    </div>
+    <div class="set-row">
+      <div class="set-lbl">Default email message</div>
+      <div class="set-desc">Pre-fills email body on every new invoice</div>
+      <textarea class="set-ta" id="set-msg" placeholder="Please find the invoice for services performed. Payment is due within 30 days."></textarea>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Invoice defaults</div>
+    <div class="set-row">
+      <div class="set-lbl">Default invoice notes / payment terms</div>
+      <div class="set-desc">Pre-fills the notes section on every new invoice</div>
+      <textarea class="set-ta" id="set-notes" placeholder="All ADAS calibrations performed to OEM specifications. Payment terms: Net 30."></textarea>
+    </div>
+    <div class="set-row">
+      <div class="set-lbl">Tax rate (%)</div>
+      <div class="set-desc">BC GST is 5%</div>
+      <input class="set-input" id="set-tax" type="number" min="0" max="30" step="0.5" value="5" style="max-width:100px" oninput="recalc()"/>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Favourite services (quick-add chips)</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:.75rem">Click a service to toggle it as a favourite. Favourites appear as one-tap chips above service lines.</div>
+    <div id="all-svcs-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+  <div style="margin-top:.5rem;display:flex;align-items:center;gap:.75rem">
+    <button class="btnp" onclick="saveSettings()">Save settings</button>
+    <span id="set-saved" style="font-size:12px;color:var(--mint);display:none">✓ Saved!</span>
+  </div>
+</div>
+
+<!-- ══════════════ TIPS TAB ══════════════ -->
+<div class="tab-content" id="tab-tips">
+  <div class="tips-grid">
+    <div class="tip-card"><div class="tip-icon">🔖</div><div class="tip-title">Bookmark this file</div><div class="tip-body">Save it to your bookmarks bar for one-click access on any computer at the shop. Works completely offline too.</div></div>
+    <div class="tip-card"><div class="tip-icon">⚡</div><div class="tip-title">One button does everything</div><div class="tip-body">"Log to Sheets + Send Gmail" records the invoice in your Google Sheet AND opens Gmail pre-filled. Hit send and you're done.</div></div>
+    <div class="tip-card"><div class="tip-icon">🔁</div><div class="tip-title">Duplicate invoices</div><div class="tip-body">In the Ledger, hit the copy icon on any past invoice to clone it instantly — great for repeat vehicles or similar jobs. Just update the claim # and you're set.</div></div>
+    <div class="tip-card"><div class="tip-icon">💰</div><div class="tip-title">Track payment status</div><div class="tip-body">Mark invoices as Paid, Pending, or Overdue directly in the Ledger. The topbar shows an overdue count so nothing slips through.</div></div>
+    <div class="tip-card"><div class="tip-icon">🚗</div><div class="tip-title">RO# auto-fill</div><div class="tip-body">Type a RO# you've used before and the vehicle info fills in automatically — no re-entering the same vehicle twice.</div></div>
+    <div class="tip-card"><div class="tip-icon">⭐</div><div class="tip-title">Favourite services</div><div class="tip-body">Star your most-used services in Settings. They appear as one-tap chips above the service lines — no dropdown hunting needed.</div></div>
+    <div class="tip-card"><div class="tip-icon">📋</div><div class="tip-title">Notes protect you with ICBC</div><div class="tip-body">Always document calibration method (static vs dynamic), post-cal verification steps, and km driven. This protects you if a claim gets questioned.</div></div>
+    <div class="tip-card"><div class="tip-icon">👩‍💼</div><div class="tip-title">Share with your bookkeeper</div><div class="tip-body">Give your accountant the Google Sheets link. Every invoice logs there instantly — no emailing files, no manual entry.</div></div>
+    <div class="tip-card"><div class="tip-icon">📊</div><div class="tip-title">Dashboard insights</div><div class="tip-body">Check the Dashboard monthly — revenue trends, top services, and avg invoice value help you spot growth opportunities and plan staffing.</div></div>
+    <div class="tip-card"><div class="tip-icon">📱</div><div class="tip-title">Works on mobile</div><div class="tip-body">Open this on your phone browser and add to your home screen. Invoice from the shop floor, front desk, or wherever the job is done.</div></div>
+  </div>
+  <div class="card" style="margin-top:.9rem">
+    <div class="card-title">Your Google resources</div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <a class="btnp" href="https://docs.google.com/spreadsheets/d/1WW98GGw7180y6kgHsizyVjFcUyx9T9-4NinosuMgNjg" target="_blank" style="text-decoration:none">↗ Invoice Ledger (Sheets)</a>
+      <a class="btns" href="https://drive.google.com/drive/folders/1Iv0vmJjK46zjWA0u8fcPpD_pqFFOiGVT" target="_blank" style="text-decoration:none">↗ Mint PDR Folder (Drive)</a>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- DUPLICATE MODAL -->
+<div class="modal-bg" id="dup-modal">
+  <div class="modal">
+    <div class="modal-title">Duplicate invoice</div>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This will clone the invoice and load it into the form. Update the claim # and any details before logging.</p>
+    <div class="fld" style="margin-bottom:.75rem"><label>New claim #</label><input id="dup-claim" placeholder="e.g. ICBC-2026-05001"/></div>
+    <div class="modal-actions">
+      <button class="btng" onclick="closeDupModal()">Cancel</button>
+      <button class="btnp" onclick="confirmDuplicate()">Load into form</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID="1WW98GGw7180y6kgHsizyVjFcUyx9T9-4NinosuMgNjg";
+
+const SVCS=[
+  {g:"Camera & vision",cat:"ADAS",items:["LDW — Lane Departure Warning","LKA — Lane Keep Assist","AVM — Around View Monitoring / 360° Camera","TSR — Traffic Sign Recognition","HBA — High Beam Assist","RCW — Rear Collision Warning (Camera)","NV — Night Vision / Infrared","HUD — Head-Up Display"]},
+  {g:"Radar & distance",cat:"ADAS",items:["ACC — Adaptive Cruise Control","AEB — Autonomous Emergency Braking","BSD — Blind Spot Detection","LCA — Lane Change Assist","RCTA — Rear Cross Traffic Alert","Lidar — Laser-based Detection"]},
+  {g:"Safety & lighting",cat:"ADAS",items:["AFS — Adaptive Front-lighting System","Parking Assist — Ultrasonic & Camera","DMS — Driver Monitoring System","Pre-Calibration Alignment Check"]},
+  {g:"Glass",cat:"Glass",items:["Windshield Replacement","Windshield Chip Repair","Side Window Replacement","Rear Glass Replacement"]},
+  {g:"PDR dent repair",cat:"PDR",items:["PDR — Small Dent (< 1 inch)","PDR — Medium Dent (1–3 inch)","PDR — Large Dent (3+ inch)","PDR — Panel Package","PDR — Hail Damage"]},
+  {g:"Other",cat:"Other",items:["Custom / Other (enter in notes)"]}
+];
+const ALL_ITEMS=[];const ITEM_CAT={};
+SVCS.forEach(g=>g.items.forEach(s=>{ALL_ITEMS.push(s);ITEM_CAT[s]=g.cat;}));
+
+function buildOpts(){
+  let h='<option value="">Select service...</option>';
+  SVCS.forEach(g=>{h+=`<option disabled>— ${g.g} —</option>`;g.items.forEach(s=>h+=`<option value="${s}">${s}</option>`);});
+  return h;
+}
+const OPTS=buildOpts();
+let lc=0;
+
+// ── SETTINGS ──
+function getSettings(){try{return JSON.parse(localStorage.getItem("mintSettings")||"{}");}catch{return{};}}
+function saveSettings(){
+  const s={
+    email:document.getElementById("set-email").value,
+    msg:document.getElementById("set-msg").value,
+    notes:document.getElementById("set-notes").value,
+    tax:parseFloat(document.getElementById("set-tax").value)||5,
+    favs:getFavList()
+  };
+  localStorage.setItem("mintSettings",JSON.stringify(s));
+  renderFavChips();recalc();
+  const el=document.getElementById("set-saved");el.style.display="inline";setTimeout(()=>el.style.display="none",2500);
+}
+function getFavList(){
+  return [...document.querySelectorAll("#all-svcs-list .chip")].filter(c=>c.dataset.on==="1").map(c=>c.dataset.svc);
+}
+function getTax(){return parseFloat(document.getElementById("set-tax")?document.getElementById("set-tax").value:5)||5;}
+function loadSettingsUI(){
+  const s=getSettings();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||"";};
+  set("set-email",s.email);set("set-msg",s.msg);set("set-notes",s.notes);
+  const st=document.getElementById("set-tax");if(st)st.value=s.tax||5;
+  renderAllSvcsList();
+}
+function renderAllSvcsList(){
+  const s=getSettings();const favs=s.favs||[];
+  const el=document.getElementById("all-svcs-list");if(!el)return;
+  el.innerHTML=ALL_ITEMS.map(svc=>{
+    const on=favs.includes(svc)?"1":"0";
+    return`<button class="chip${on==="1"?" chip-green":""}" data-svc="${svc}" data-on="${on}" onclick="toggleFavChip(this)">${svc}</button>`;
+  }).join("");
+}
+function toggleFavChip(el){
+  if(el.dataset.on==="1"){el.dataset.on="0";el.classList.remove("chip-green");}
+  else{el.dataset.on="1";el.classList.add("chip-green");}
+}
+
+// ── FAVOURITE CHIPS ──
+function renderFavChips(){
+  const s=getSettings();const favs=s.favs||[];
+  const wrap=document.getElementById("fav-wrap");const el=document.getElementById("fav-chips");
+  if(!favs.length){if(wrap)wrap.style.display="none";return;}
+  if(wrap)wrap.style.display="block";
+  if(el)el.innerHTML=favs.map(svc=>`<button class="chip chip-green" onclick="addLine('${svc.replace(/'/g,"\\'")}')">+ ${svc.split("—")[0].trim()}</button>`).join("");
+}
+
+// ── VEHICLE HISTORY ──
+function getVH(){try{return JSON.parse(localStorage.getItem("mintVH")||"[]");}catch{return[];}}
+function saveVH(v){let vh=getVH().filter(x=>x.ro!==v.ro);vh.unshift(v);if(vh.length>8)vh=vh.slice(0,8);localStorage.setItem("mintVH",JSON.stringify(vh));}
+function renderRecentVehicles(){
+  const vh=getVH();const wrap=document.getElementById("rv-wrap");const el=document.getElementById("rv-chips");
+  if(!vh.length||!wrap){if(wrap)wrap.style.display="none";return;}
+  wrap.style.display="flex";
+  el.innerHTML=vh.slice(0,4).map((v,i)=>`<button class="chip" onclick="fillVehicle(${i})">${[v.yr,v.mk,v.mo].filter(Boolean).join(" ")}</button>`).join("");
+}
+function fillVehicle(i){
+  const v=getVH()[i];if(!v)return;
+  ["yr","mk","mo","vin","odo","ro"].forEach(k=>{const el=document.getElementById("v-"+k);if(el)el.value=v[k]||"";});
+  autoSub();
+}
+function tryAutoFill(){
+  const ro=document.getElementById("v-ro").value.trim();if(!ro)return;
+  const vh=getVH();const m=vh.find(v=>v.ro===ro);if(m)fillVehicle(vh.indexOf(m));
+}
+
+// ── LINE ITEMS ──
+function addLine(svc="",notes="",amt="",listPrice=""){
+  const id=++lc;const tr=document.createElement("tr");tr.id="ln-"+id;
+  tr.innerHTML=`<td><select oninput="recalc()">${OPTS}</select></td>
+    <td><input type="text" id="nt-${id}" value="${notes}" placeholder="Optional note"/></td>
+    <td><input type="number" id="lp-${id}" value="${listPrice?parseFloat(listPrice).toFixed(2):amt?(parseFloat(amt)/0.8).toFixed(2):''}" placeholder="0.00" min="0" step="0.01" oninput="calcDiscount(${id})"/></td>
+    <td style="text-align:right;padding-right:8px;vertical-align:middle"><span id="am-${id}" data-val="${amt||0}" style="font-size:13px;font-weight:500;color:var(--mint);font-family:'DM Mono',monospace">$${amt?parseFloat(amt).toFixed(2):'0.00'}</span></td>
+    <td><button class="delbtn" onclick="delLine(${id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`;
+  document.getElementById("lines").appendChild(tr);
+  if(svc){const sel=tr.querySelector("select");for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===svc){sel.selectedIndex=i;break;}}}
+  recalc();
+}
+function delLine(id){const el=document.getElementById("ln-"+id);if(el)el.remove();recalc();}
+
+function calcDiscount(id){
+  const lp=document.getElementById("lp-"+id);
+  const am=document.getElementById("am-"+id);
+  if(!lp||!am)return;
+  const list=parseFloat(lp.value)||0;
+  const discounted=list*0.8;
+  am.textContent="$"+discounted.toFixed(2);
+  am.dataset.val=discounted.toFixed(2);
+  recalc();
+}
+function recalc(){
+  let s=0;document.querySelectorAll('[id^="am-"]').forEach(i=>{const v=parseFloat(i.dataset?i.dataset.val:i.value||0);if(!isNaN(v))s+=v;});
+  let listTotal=0;document.querySelectorAll('[id^="lp-"]').forEach(i=>{const v=parseFloat(i.value||0);if(!isNaN(v))listTotal+=v;});
+  const discount=listTotal-s;
+  const tax=getTax();const g=s*tax/100;const t=s+g;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set("list-total","$"+listTotal.toFixed(2));
+  set("discount-amt","-$"+discount.toFixed(2));
+  set("sub","$"+s.toFixed(2));set("gst","$"+g.toFixed(2));set("ttl","$"+t.toFixed(2));
+  const gl=document.getElementById("gst-lbl");if(gl)gl.textContent=`GST (${tax}%)`;
+  autoSub();
+}
+function autoSub(){
+  const yr=document.getElementById("v-yr").value,mk=document.getElementById("v-mk").value,mo=document.getElementById("v-mo").value;
+  const num=document.getElementById("inv-num").textContent;
+  let s=`Invoice ${num} — Mint PDR and Glass`;
+  if(yr||mk||mo)s+=` | ${[yr,mk,mo].filter(Boolean).join(" ")}`;
+  const es=document.getElementById("e-sub");if(es)es.value=s;
+}
+
+// ── INVOICE NUMBER ──
+function getNum(){let n=parseInt(localStorage.getItem("mintN")||"0")+1;localStorage.setItem("mintN",n);return "#"+String(n).padStart(4,"0");}
+
+// ── LEDGER ──
+function getLedger(){try{return JSON.parse(localStorage.getItem("mintLedger")||"[]");}catch{return[];}}
+function saveLedger(d){localStorage.setItem("mintLedger",JSON.stringify(d));}
+
+function collectLines(){
+  const rows=[];
+  document.querySelectorAll("#lines tr").forEach(tr=>{
+    const sel=tr.querySelector("select"),nt=tr.querySelector("input[type=text]");
+    const lpEl=tr.querySelector("input[type=number]");
+    const amEl=tr.querySelector("span[id^='am-']");
+    if(!sel)return;
+    const svc=sel.value,notes=nt?nt.value:"";
+    const listPrice=parseFloat(lpEl?lpEl.value:0)||0;
+    const amt=parseFloat(amEl?amEl.dataset.val:0)||0;
+    if(svc)rows.push({svc,notes,listPrice,amt});
+  });
+  return rows;
+}
+function buildRecord(){
+  const lines=collectLines(),sub=lines.reduce((s,l)=>s+l.amt,0),tax=getTax();
+  return{
+    num:document.getElementById("inv-num").textContent,
+    date:document.getElementById("inv-date").textContent,
+    billTo:document.getElementById("bill-to").value,
+    claim:document.getElementById("claim").value,
+    yr:document.getElementById("v-yr").value,mk:document.getElementById("v-mk").value,mo:document.getElementById("v-mo").value,
+    vin:document.getElementById("v-vin").value,odo:document.getElementById("v-odo").value,ro:document.getElementById("v-ro").value,
+    notes:document.getElementById("inv-notes").value,
+    lines,tax,
+    sub:sub.toFixed(2),gst:(sub*tax/100).toFixed(2),total:(sub*(1+tax/100)).toFixed(2),
+    payStatus:"pending"
+  };
+}
+function buildEmailBody(r){
+  let b=`INVOICE ${r.num}\nDate: ${r.date}\n\nBill To: ${r.billTo}\nClaim #: ${r.claim||"—"}\n\nVehicle: ${[r.yr,r.mk,r.mo].filter(Boolean).join(" ")||"—"}\nVIN: ${r.vin||"—"} | Odometer: ${r.odo||"—"} km | RO #: ${r.ro||"—"}\n\nSERVICES PERFORMED:\n`;
+  r.lines.forEach(l=>{b+=`  • ${l.svc}${l.notes?" — "+l.notes:""}: $${l.amt.toFixed(2)}\n`;});
+  b+=`\nSubtotal:  $${r.sub}\nGST (${r.tax||5}%): $${r.gst}\nTOTAL:     $${r.total}`;
+  if(r.notes)b+=`\n\nNOTES:\n${r.notes}`;
+  b+=`\n\n—\nMint PDR and Glass | 6957 Waltham Ave, Burnaby BC | glass@mintautobody.ca`;
+  return b;
+}
+
+// ── STATUS ──
+function setStatus(type,msg,spin=false){
+  const bar=document.getElementById("status"),sp=document.getElementById("sp"),txt=document.getElementById("stxt");
+  bar.className="status show "+type;sp.style.display=spin?"block":"none";txt.textContent=msg;
+  if(type==="ok")setTimeout(()=>bar.className="status",6000);
+}
+
+// ── LOG TO SHEETS ──
+async function logToSheets(){
+  const r=buildRecord();
+  if(!r.lines.length){setStatus("err","Add at least one service line before logging.");return false;}
+  setStatus("load","Logging to Google Sheets...",true);
+  document.getElementById("main-btn").disabled=true;
+  const svcs=r.lines.map(l=>l.svc+(l.notes?" ("+l.notes+")":"")+" $"+parseFloat(l.amt||0).toFixed(2)).join("; ");
+  const row=[r.num,r.date,r.billTo,r.claim,r.yr,r.mk,r.mo,r.vin,r.odo,r.ro,svcs,r.notes||"",r.sub,r.gst,r.total,r.payStatus];
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:512,
+        mcp_servers:[{type:"url",url:"https://drivemcp.googleapis.com/mcp/v1",name:"google-drive"}],
+        messages:[{role:"user",content:`Append this row to Google Spreadsheet ID: ${SHEET_ID}, Sheet1, range A:P. ValueInputOption RAW. Row: ${JSON.stringify(row)}. Reply DONE only.`}]})
+    });
+    const data=await resp.json();
+    const text=(data.content||[]).map(c=>c.text||"").join("");
+    const ok=text.includes("DONE")||text.toLowerCase().includes("success")||text.toLowerCase().includes("append");
+    const L=getLedger();L.unshift(r);saveLedger(L);
+    if(r.yr&&r.mk)saveVH({yr:r.yr,mk:r.mk,mo:r.mo,vin:r.vin,odo:r.odo,ro:r.ro});
+    renderRecentVehicles();updateOverdueBadge();
+    setStatus("ok",ok?`✓ ${r.num} logged to Google Sheets`:`✓ ${r.num} saved locally`);
+    return true;
+  }catch(e){
+    const L=getLedger();L.unshift(r);saveLedger(L);
+    if(r.yr&&r.mk)saveVH({yr:r.yr,mk:r.mk,mo:r.mo,vin:r.vin,odo:r.odo,ro:r.ro});
+    renderRecentVehicles();updateOverdueBadge();
+    setStatus("ok",`✓ ${r.num} saved locally`);return true;
+  }finally{document.getElementById("main-btn").disabled=false;}
+}
+function sendGmail(){
+  const r=buildRecord(),msg=document.getElementById("e-msg").value;
+  const body=(msg?msg+"\n\n":"")+buildEmailBody(r);
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(document.getElementById("e-to").value)}&su=${encodeURIComponent(document.getElementById("e-sub").value)}&body=${encodeURIComponent(body)}`,"_blank");
+}
+async function doAll(){const ok=await logToSheets();if(ok)sendGmail();}
+function doPrint(){
+  const r=buildRecord();
+  const svgLogo=`<svg width="60" height="60" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="25,3 47,25 25,47 3,25" fill="#E1F5EE" stroke="#1D9E75" stroke-width="2"/><polygon points="25,10 40,25 25,40 10,25" fill="none" stroke="#888780" stroke-width=".7" opacity=".5"/><circle cx="25" cy="25" r="7.5" fill="none" stroke="#1D9E75" stroke-width="1.5"/><line x1="25" y1="14" x2="25" y2="36" stroke="#1D9E75" stroke-width="1.2"/><line x1="14" y1="25" x2="36" y2="25" stroke="#888780" stroke-width="1.2"/></svg>`;
+  const linesRows=r.lines.map(l=>{
+    const listP=parseFloat(l.listPrice||l.amt||0);
+    const discP=parseFloat(l.amt||0);
+    const hasDiscount=listP>discP&&listP>0;
+    return`<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0f0ee;font-size:13px">
+        ${l.svc}${l.notes?`<br><span style="font-size:11px;color:#888;font-style:italic">${l.notes}</span>`:""}
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0f0ee;text-align:right;font-size:13px;white-space:nowrap">
+        ${hasDiscount?`<span style="color:#888;font-size:11px;display:block">List: $${listP.toFixed(2)}</span>`:""}
+        <span style="font-family:monospace;font-weight:500;color:#1D9E75">$${discP.toFixed(2)}</span>
+        ${hasDiscount?`<span style="font-size:10px;color:#E24B4A;display:block">20% off</span>`:""}
+      </td>
+    </tr>`;
+  }).join("");
+  const w=window.open("","_blank");
+  w.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#fff;color:#1A1A18;font-size:14px;padding:2.5rem}
+  @media print{body{padding:1.5cm}@page{margin:0;size:A4 portrait}}
+  .inv-wrap{max-width:680px;margin:0 auto}
+  .inv-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:1.5rem;border-bottom:2px solid #1D9E75;margin-bottom:1.5rem}
+  .co-name{font-size:20px;font-weight:500;letter-spacing:2px;color:#1D9E75;margin-top:6px}
+  .co-tag{font-size:9px;color:#aaa;letter-spacing:3px}
+  .co-addr{font-size:11px;color:#666;margin-top:6px;line-height:1.7}
+  .inv-right{text-align:right}
+  .inv-word{font-size:28px;font-weight:300;letter-spacing:5px;color:#1A1A18;font-family:'DM Mono',monospace}
+  .inv-num{font-size:20px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;margin-top:4px}
+  .inv-date{font-size:12px;color:#888;margin-top:3px}
+  .section{margin-bottom:1.25rem}
+  .section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:.5rem}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 2rem}
+  .meta-row{display:flex;flex-direction:column;gap:2px}
+  .meta-label{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px}
+  .meta-val{font-size:13px;color:#1A1A18;font-weight:500}
+  .veh-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem 1rem}
+  table.svc-table{width:100%;border-collapse:collapse;margin-bottom:1rem}
+  table.svc-table thead tr{background:#1D9E75}
+  table.svc-table thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:#fff}
+  table.svc-table thead th:last-child{text-align:right}
+  .totals-wrap{display:flex;justify-content:flex-end}
+  .totals-box{min-width:220px}
+  .t-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#555}
+  .t-row span:last-child{font-family:'DM Mono',monospace;font-weight:500;color:#1A1A18}
+  .t-div{border:none;border-top:1px solid #eee;margin:6px 0}
+  .t-total{font-size:16px;font-weight:500}
+  .t-total span:last-child{color:#1D9E75}
+  .notes-box{background:#f8f8f6;border-left:3px solid #1D9E75;padding:10px 14px;border-radius:0 8px 8px 0;font-size:12px;color:#555;line-height:1.7;margin-top:1rem}
+  .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa}
+  .logo-row{display:flex;align-items:center;gap:10px}
+</style>
+</head><body>
+<div class="inv-wrap">
+  <div class="inv-top">
+    <div class="logo-row">
+      ${svgLogo}
+      <div>
+        <div class="co-name">MINT</div>
+        <div class="co-tag">— PDR AND GLASS —</div>
+        <div class="co-addr">6957 Waltham Avenue, Burnaby, BC<br>glass@mintautobody.ca</div>
+      </div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-word">INVOICE</div>
+      <div class="inv-num">${r.num}</div>
+      <div class="inv-date">${r.date}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="meta-grid">
+      <div class="meta-row"><div class="meta-label">Bill to</div><div class="meta-val">${r.billTo||"—"}</div></div>
+      <div class="meta-row"><div class="meta-label">Claim #</div><div class="meta-val">${r.claim||"—"}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Vehicle information</div>
+    <div class="veh-grid">
+      <div class="meta-row"><div class="meta-label">Year / Make / Model</div><div class="meta-val">${[r.yr,r.mk,r.mo].filter(Boolean).join(" ")||"—"}</div></div>
+      <div class="meta-row"><div class="meta-label">VIN</div><div class="meta-val" style="font-family:'DM Mono',monospace;font-size:12px">${r.vin||"—"}</div></div>
+      <div class="meta-row"><div class="meta-label">Odometer / RO #</div><div class="meta-val">${r.odo?r.odo+" km":"—"} &nbsp;·&nbsp; ${r.ro||"—"}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Services performed</div>
+    <table class="svc-table">
+      <thead><tr><th>Description</th><th style="text-align:right">List price / After discount</th></tr></thead>
+      <tbody>${linesRows}</tbody>
+    </table>
+    <div class="totals-wrap">
+      <div class="totals-box">
+        <div class="t-row"><span>Subtotal</span><span>$${r.sub}</span></div>
+        <div class="t-row"><span>GST (${r.tax||5}%)</span><span>$${r.gst}</span></div>
+        <hr class="t-div">
+        <div class="t-row t-total"><span>Total</span><span>$${r.total}</span></div>
+      </div>
+    </div>
+  </div>
+
+  ${r.notes?`<div class="notes-box"><strong style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#1D9E75">Notes</strong><br>${r.notes}</div>`:""}
+
+  <div class="footer">
+    Mint PDR and Glass &nbsp;·&nbsp; 6957 Waltham Avenue, Burnaby, BC &nbsp;·&nbsp; glass@mintautobody.ca
+  </div>
+</div>
+
+</body></html>`);
+  w.document.close();
+}
+function printRecord(idx){
+  const r=getLedger()[idx];if(!r)return;
+  const svgLogo=`<svg width="60" height="60" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="25,3 47,25 25,47 3,25" fill="#E1F5EE" stroke="#1D9E75" stroke-width="2"/><polygon points="25,10 40,25 25,40 10,25" fill="none" stroke="#888780" stroke-width=".7" opacity=".5"/><circle cx="25" cy="25" r="7.5" fill="none" stroke="#1D9E75" stroke-width="1.5"/><line x1="25" y1="14" x2="25" y2="36" stroke="#1D9E75" stroke-width="1.2"/><line x1="14" y1="25" x2="36" y2="25" stroke="#888780" stroke-width="1.2"/></svg>`;
+  const linesRows=(r.lines||[]).map(l=>{
+    const listP=parseFloat(l.listPrice||l.amt||0);
+    const discP=parseFloat(l.amt||0);
+    const hasDiscount=listP>discP&&listP>0;
+    return`<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0f0ee;font-size:13px">
+        ${l.svc}${l.notes?`<br><span style="font-size:11px;color:#888;font-style:italic">${l.notes}</span>`:""}
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0f0ee;text-align:right;font-size:13px;white-space:nowrap">
+        ${hasDiscount?`<span style="color:#888;font-size:11px;display:block">List: $${listP.toFixed(2)}</span>`:""}
+        <span style="font-family:monospace;font-weight:500;color:#1D9E75">$${discP.toFixed(2)}</span>
+        ${hasDiscount?`<span style="font-size:10px;color:#E24B4A;display:block">20% off</span>`:""}
+      </td>
+    </tr>`;
+  }).join("");
+  const w=window.open("","_blank");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;background:#fff;color:#1A1A18;font-size:14px;padding:2rem}@page{margin:0!important;size:A4 portrait}@media print{body{padding:1.5cm;margin:0}html{margin:0}}.inv-wrap{max-width:680px;margin:0 auto}.inv-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:1.5rem;border-bottom:2px solid #1D9E75;margin-bottom:1.5rem}.co-name{font-size:20px;font-weight:500;letter-spacing:2px;color:#1D9E75;margin-top:6px}.co-tag{font-size:9px;color:#aaa;letter-spacing:3px}.co-addr{font-size:11px;color:#666;margin-top:6px;line-height:1.7}.inv-right{text-align:right}.inv-word{font-size:28px;font-weight:300;letter-spacing:5px;color:#1A1A18;font-family:'DM Mono',monospace}.inv-num{font-size:20px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;margin-top:4px}.inv-date{font-size:12px;color:#888;margin-top:3px}.section{margin-bottom:1.25rem}.section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:.5rem}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 2rem}.meta-row{display:flex;flex-direction:column;gap:2px}.meta-label{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px}.meta-val{font-size:13px;color:#1A1A18;font-weight:500}.veh-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem 1rem}table.svc-table{width:100%;border-collapse:collapse;margin-bottom:1rem}table.svc-table thead tr{background:#1D9E75}table.svc-table thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:#fff}table.svc-table thead th:last-child{text-align:right}.totals-wrap{display:flex;justify-content:flex-end}.totals-box{min-width:220px}.t-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#555}.t-row span:last-child{font-family:'DM Mono',monospace;font-weight:500;color:#1A1A18}.t-div{border:none;border-top:1px solid #eee;margin:6px 0}.t-total{font-size:16px;font-weight:500}.t-total span:last-child{color:#1D9E75}.notes-box{background:#f8f8f6;border-left:3px solid #1D9E75;padding:10px 14px;border-radius:0 8px 8px 0;font-size:12px;color:#555;line-height:1.7;margin-top:1rem}.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa}.logo-row{display:flex;align-items:center;gap:10px}</style>
+</head><body><div class="inv-wrap">
+  <div class="inv-top">
+    <div class="logo-row">${svgLogo}<div><div class="co-name">MINT</div><div class="co-tag">— PDR AND GLASS —</div><div class="co-addr">6957 Waltham Avenue, Burnaby, BC<br>glass@mintautobody.ca</div></div></div>
+    <div class="inv-right"><div class="inv-word">INVOICE</div><div class="inv-num">${r.num}</div><div class="inv-date">${r.date}</div></div>
+  </div>
+  <div class="section"><div class="meta-grid">
+    <div class="meta-row"><div class="meta-label">Bill to</div><div class="meta-val">${r.billTo||"—"}</div></div>
+    <div class="meta-row"><div class="meta-label">Claim #</div><div class="meta-val">${r.claim||"—"}</div></div>
+  </div></div>
+  <div class="section"><div class="section-title">Vehicle information</div><div class="veh-grid">
+    <div class="meta-row"><div class="meta-label">Year / Make / Model</div><div class="meta-val">${[r.yr,r.mk,r.mo].filter(Boolean).join(" ")||"—"}</div></div>
+    <div class="meta-row"><div class="meta-label">VIN</div><div class="meta-val" style="font-family:'DM Mono',monospace;font-size:12px">${r.vin||"—"}</div></div>
+    <div class="meta-row"><div class="meta-label">Odometer / RO #</div><div class="meta-val">${r.odo?r.odo+" km":"—"} · ${r.ro||"—"}</div></div>
+  </div></div>
+  <div class="section"><div class="section-title">Services performed</div>
+    <table class="svc-table"><thead><tr><th>Description</th><th style="text-align:right">List price / After discount</th></tr></thead><tbody>${linesRows}</tbody></table>
+    <div class="totals-wrap"><div class="totals-box">
+      <div class="t-row"><span>List price</span><span>$${r.listTotal||r.sub}</span></div>
+      <div class="t-row" style="color:#E24B4A"><span>Discount (20%)</span><span style="color:#E24B4A">-$${r.discount||"0.00"}</span></div>
+      <div class="t-row"><span>Subtotal</span><span>$${r.sub}</span></div>
+      <div class="t-row"><span>GST (${r.tax||5}%)</span><span>$${r.gst}</span></div>
+      <hr class="t-div">
+      <div class="t-row t-total"><span>Total</span><span>$${r.total}</span></div>
+    </div></div>
+  </div>
+  ${r.notes?`<div class="notes-box"><strong style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#1D9E75">Notes</strong><br>${r.notes}</div>`:""}
+  <div class="footer">Mint PDR and Glass · 6957 Waltham Avenue, Burnaby, BC · glass@mintautobody.ca</div>
+</div></body></html>`);
+  w.document.close();
+setTimeout(()=>w.print(),800);
+}
+function newInvoice(){
+  if(!confirm("Start a new invoice? Current data will be cleared."))return;
+  const s=getSettings();
+  ["claim","v-yr","v-mk","v-mo","v-vin","v-odo","v-ro"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const ni=document.getElementById("inv-notes");if(ni)ni.value=s.notes||"";
+  const et=document.getElementById("e-to");if(et)et.value=s.email||"";
+  const em=document.getElementById("e-msg");if(em)em.value=s.msg||"";
+  document.getElementById("lines").innerHTML="";lc=0;
+  const num=getNum();
+  document.getElementById("inv-num").textContent=num;
+  document.getElementById("inv-date").textContent=new Date().toLocaleDateString("en-CA",{year:"numeric",month:"long",day:"numeric"});
+  addLine();autoSub();document.getElementById("status").className="status";
+  switchTab("invoice",document.querySelector(".ntab"));
+}
+
+// ── DUPLICATE INVOICE ──
+let dupRecord=null;
+function openDupModal(idx){
+  const L=getLedger();dupRecord={...L[idx]};
+  document.getElementById("dup-claim").value="";
+  document.getElementById("dup-modal").classList.add("open");
+}
+function closeDupModal(){document.getElementById("dup-modal").classList.remove("open");dupRecord=null;}
+function confirmDuplicate(){
+  if(!dupRecord)return;
+  const newClaim=document.getElementById("dup-claim").value.trim();
+  const s=getSettings();
+  ["claim","v-yr","v-mk","v-mo","v-vin","v-odo","v-ro"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("claim").value=newClaim||dupRecord.claim||"";
+  document.getElementById("v-yr").value=dupRecord.yr||"";
+  document.getElementById("v-mk").value=dupRecord.mk||"";
+  document.getElementById("v-mo").value=dupRecord.mo||"";
+  document.getElementById("v-vin").value=dupRecord.vin||"";
+  document.getElementById("v-odo").value=dupRecord.odo||"";
+  document.getElementById("v-ro").value=dupRecord.ro||"";
+  document.getElementById("inv-notes").value=dupRecord.notes||s.notes||"";
+  document.getElementById("e-to").value=s.email||"";
+  document.getElementById("e-msg").value=s.msg||"";
+  document.getElementById("lines").innerHTML="";lc=0;
+  const num=getNum();
+  document.getElementById("inv-num").textContent=num;
+  document.getElementById("inv-date").textContent=new Date().toLocaleDateString("en-CA",{year:"numeric",month:"long",day:"numeric"});
+  (dupRecord.lines||[]).forEach(l=>addLine(l.svc,l.notes,l.amt));
+  if(!(dupRecord.lines||[]).length)addLine();
+  autoSub();closeDupModal();
+  switchTab("invoice",document.querySelectorAll(".ntab")[0]);
+  setStatus("ok","Invoice duplicated — update claim # and details before logging.");
+}
+
+// ── PAYMENT STATUS ──
+// ── EDIT INVOICE ──
+let editingIdx = -1;
+function editRecord(idx){
+  const L=getLedger();const r=L[idx];if(!r)return;
+  editingIdx=idx;
+  // Load all fields back into form
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||"";};
+  set("bill-to",r.billTo);set("claim",r.claim);
+  set("v-yr",r.yr);set("v-mk",r.mk);set("v-mo",r.mo);
+  set("v-vin",r.vin);set("v-odo",r.odo);set("v-ro",r.ro);
+  set("inv-notes",r.notes);
+  const s=getSettings();
+  set("e-to",s.email||"");set("e-msg",s.msg||"");
+  // Set invoice number and date to original
+  document.getElementById("inv-num").textContent=r.num;
+  document.getElementById("inv-date").textContent=r.date;
+  // Load line items
+  document.getElementById("lines").innerHTML="";lc=0;
+  (r.lines||[]).forEach(l=>{addLine(l.svc,l.notes,l.amt,l.listPrice||l.amt);});
+  if(!(r.lines||[]).length)addLine();
+  autoSub();
+  // Show editing banner
+  document.getElementById("edit-banner").style.display="flex";
+  document.getElementById("main-btn").style.display="none";
+  document.getElementById("save-edit-btn").style.display="inline-flex";
+  // Switch to invoice tab
+  switchTab("invoice",document.querySelectorAll(".ntab")[0]);
+  setStatus("warn","Editing invoice "+r.num+" — make your changes and hit Save changes.");
+}
+function cancelEdit(){
+  editingIdx=-1;
+  document.getElementById("edit-banner").style.display="none";
+  document.getElementById("main-btn").style.display="inline-flex";
+  document.getElementById("save-edit-btn").style.display="none";
+  document.getElementById("status").className="status";
+}
+function saveEdit(){
+  if(editingIdx<0)return;
+  const r=buildRecord();
+  const L=getLedger();
+  // Keep original payStatus
+  r.payStatus=L[editingIdx].payStatus||"pending";
+  L[editingIdx]=r;
+  saveLedger(L);
+  cancelEdit();
+  setStatus("ok","✓ Invoice "+r.num+" updated successfully");
+  renderLedgerStats();
+}
+function cycleStatus(idx){
+  const L=getLedger();const cycle={pending:"paid",paid:"overdue",overdue:"pending"};
+  L[idx].payStatus=cycle[L[idx].payStatus||"pending"]||"pending";
+  saveLedger(L);renderLedger();renderLedgerStats();updateOverdueBadge();
+}
+function updateOverdueBadge(){
+  const L=getLedger();const n=L.filter(r=>r.payStatus==="overdue").length;
+  const b=document.getElementById("overdue-badge");
+  if(n>0){b.textContent=`${n} overdue`;b.style.display="inline";}else{b.style.display="none";}
+}
+
+// ── LEDGER RENDER ──
+function clearLedger(){if(!confirm("Clear local ledger? Your Google Sheet is not affected."))return;saveLedger([]);renderLedger();renderLedgerStats();updateOverdueBadge();}
+function renderLedgerStats(){
+  const L=getLedger();
+  const rev=L.reduce((s,r)=>s+parseFloat(r.total||0),0);
+  const gst=L.reduce((s,r)=>s+parseFloat(r.gst||0),0);
+  const now=new Date();
+  const moRev=L.filter(r=>{const d=new Date(r.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).reduce((s,r)=>s+parseFloat(r.total||0),0);
+  const unpaid=L.filter(r=>r.payStatus!=="paid").reduce((s,r)=>s+parseFloat(r.total||0),0);
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set("s-cnt",L.length);set("s-rev","$"+rev.toFixed(2));set("s-mo","$"+moRev.toFixed(2));set("s-unpaid","$"+unpaid.toFixed(2));
+  set("d-rev","$"+rev.toFixed(2));set("d-mo","$"+moRev.toFixed(2));set("d-avg","$"+(L.length?rev/L.length:0).toFixed(2));set("d-gst","$"+gst.toFixed(2));
+}
+function getMonthKey(dateStr){
+  const d=new Date(dateStr);
+  if(isNaN(d))return"Unknown";
+  return d.toLocaleDateString("en-CA",{year:"numeric",month:"long"});
+}
+function getMonthSortKey(dateStr){
+  const d=new Date(dateStr);
+  if(isNaN(d))return"0000-00";
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function populateMonthFilter(){
+  const L=getLedger();
+  const seen={};const months=[];
+  L.forEach(r=>{const mk=getMonthKey(r.date);if(!seen[mk]){seen[mk]=1;months.push({label:mk,sort:getMonthSortKey(r.date)});}});
+  months.sort((a,b)=>b.sort>a.sort?1:-1);
+  const sel=document.getElementById("month-filter");if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m.label}">${m.label}</option>`).join("");
+  if(cur)sel.value=cur;
+}
+function filterByMonth(m){
+  const sel=document.getElementById("month-filter");if(sel)sel.value=m;
+  renderLedger();
+}
+function renderLedger(){
+  populateMonthFilter();
+  const L=getLedger();
+  const q=(document.getElementById("search")||{}).value||"";
+  const sf=(document.getElementById("status-filter")||{}).value||"";
+  const mf=(document.getElementById("month-filter")||{}).value||"";
+  let filtered=L;
+  if(q)filtered=filtered.filter(r=>[r.num,r.claim,r.yr,r.mk,r.mo,r.vin,r.ro,r.loggedBy||"",r.notes||"",(r.lines||[]).map(l=>l.svc+" "+l.notes).join(" ")].join(" ").toLowerCase().includes(q.toLowerCase()));
+  if(sf)filtered=filtered.filter(r=>(r.payStatus||"pending")===sf);
+  if(mf)filtered=filtered.filter(r=>getMonthKey(r.date)===mf);
+
+  const summaryEl=document.getElementById("month-summary");
+  if(summaryEl&&!mf&&!q&&!sf&&L.length){
+    const byMonth={};
+    L.forEach(r=>{
+      const mk=getMonthKey(r.date);const sk=getMonthSortKey(r.date);
+      if(!byMonth[mk])byMonth[mk]={label:mk,sort:sk,rev:0,gst:0,cnt:0,unpaid:0};
+      byMonth[mk].rev+=parseFloat(r.total||0);
+      byMonth[mk].gst+=parseFloat(r.gst||0);
+      byMonth[mk].cnt++;
+      if(r.payStatus!=="paid")byMonth[mk].unpaid+=parseFloat(r.total||0);
+    });
+    const sorted=Object.values(byMonth).sort((a,b)=>b.sort>a.sort?1:-1);
+    summaryEl.style.display="block";
+    summaryEl.innerHTML=`<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);margin-bottom:.6rem">Monthly breakdown — click a month to filter</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:.6rem;margin-bottom:.9rem">
+        ${sorted.map(m=>`<div style="background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:.85rem 1rem;cursor:pointer" onclick="filterByMonth('${m.label}')" onmouseover="this.style.borderColor='var(--mint)';this.style.background='var(--mint-lt)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.background='var(--surf)'">
+          <div style="font-size:12px;font-weight:500;color:var(--tx);margin-bottom:5px">${m.label}</div>
+          <div style="font-size:20px;font-weight:500;font-family:'DM Mono',monospace;color:var(--mint)">$${m.rev.toFixed(2)}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--tx3)">
+            <span>${m.cnt} invoice${m.cnt!==1?"s":""}</span>
+            <span>GST $${m.gst.toFixed(2)}</span>
+          </div>
+          ${m.unpaid>0?`<div style="font-size:10px;color:var(--amber);margin-top:3px">⚠ $${m.unpaid.toFixed(2)} unpaid</div>`:""}
+        </div>`).join("")}
+      </div>`;
+  } else if(summaryEl){
+    summaryEl.style.display="none";
+  }
+
+  const tbody=document.getElementById("ledger-body");if(!tbody)return;
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty">No invoices found.${mf?`<br><button class="btns" style="margin-top:.75rem" onclick="filterByMonth('')">← Show all months</button>`:""}</div></td></tr>`;
+    return;
+  }
+
+  const psMap={paid:["ps-paid","✓ Paid"],pending:["ps-pending","⏳ Pending"],overdue:["ps-overdue","⚠ Overdue"]};
+  const groups={};const groupOrder=[];
+  filtered.forEach(r=>{
+    const mk=getMonthKey(r.date);
+    if(!groups[mk]){groups[mk]=[];groupOrder.push(mk);}
+    groups[mk].push(r);
+  });
+
+  let rows="";
+  groupOrder.forEach(month=>{
+    const grp=groups[month];
+    const mRev=grp.reduce((s,r)=>s+parseFloat(r.total||0),0);
+    const mGst=grp.reduce((s,r)=>s+parseFloat(r.gst||0),0);
+    rows+=`<tr><td colspan="10" style="background:var(--mint-lt);padding:7px 10px;border-bottom:1px solid var(--bdr)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <span style="font-size:12px;font-weight:500;color:var(--mint-dk)">${month}</span>
+        <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--mint-dk)">${grp.length} invoice${grp.length!==1?"s":""} &nbsp;·&nbsp; $${mRev.toFixed(2)} &nbsp;·&nbsp; GST $${mGst.toFixed(2)}</span>
+      </div>
+    </td></tr>`;
+    grp.forEach(r=>{
+      const svcs=(r.lines||[]).map(l=>`<div style="white-space:nowrap;line-height:1.7">${l.svc}${l.notes?` <span style="color:#bbb">· ${l.notes}</span>`:""} <span style="color:#ccc;font-family:'DM Mono',monospace">$${parseFloat(l.amt||0).toFixed(2)}</span></div>`).join("");
+      const ps=r.payStatus||"pending";const[psCls,psLbl]=psMap[ps]||psMap.pending;
+      const realIdx=L.indexOf(r);
+      rows+=`<tr>
+        <td><span class="ibadge">${r.num}</span></td>
+        <td style="white-space:nowrap;color:var(--tx2);font-size:11px">${r.date}</td>
+        <td style="font-size:11px;color:var(--tx3);font-weight:500">${r.loggedBy||"—"}</td>
+        <td style="color:var(--tx2);font-size:11px">${r.claim||"—"}</td>
+        <td style="white-space:nowrap;font-size:11px">${[r.yr,r.mk,r.mo].filter(Boolean).join(" ")||"—"}<br><span style="color:var(--tx3);font-size:10px">RO: ${r.ro||"—"}</span></td>
+        <td style="max-width:200px">${svcs}</td>
+        <td style="max-width:100px;font-size:10px;color:var(--tx3);font-style:italic;line-height:1.4">${r.notes?r.notes.substring(0,50)+(r.notes.length>50?"…":""):"—"}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap"><span style="color:var(--tx3)">$${r.listTotal||r.sub}</span><br><span style="color:var(--mint);font-weight:500">$${r.total}</span></td>
+        <td><button class="ps ${psCls}" onclick="cycleStatus(${realIdx})" title="Click to cycle status">${psLbl}</button></td>
+        <td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap;padding:6px 4px">
+          <button class="btng" style="padding:3px 7px;font-size:11px;color:#1e40af;border-color:#bfdbfe" onclick="editRecord(${realIdx})" title="Edit invoice">✏️</button>
+          <button class="btng" style="padding:3px 7px;font-size:11px" onclick="openDupModal(${realIdx})" title="Duplicate">⊕</button>
+          <button class="btng" style="padding:3px 7px;font-size:11px;color:var(--mint);border-color:var(--mint)" onclick="printRecord(${realIdx})" title="Print PDF">🖨</button>
+        </td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML=rows;
+}
+function exportCSV(){
+  const L=getLedger();if(!L.length){alert("No records to export.");return;}
+  const rows=[["Invoice #","Date","Bill To","Claim #","Year","Make","Model","VIN","Odometer","RO #","Services","Notes","Subtotal","GST","Total","Payment Status"]];
+  L.forEach(r=>{
+    const svcs=(r.lines||[]).map(l=>l.svc+(l.notes?" ("+l.notes+")":"")+" $"+parseFloat(l.amt||0).toFixed(2)).join("; ");
+    rows.push([r.num,r.date,r.billTo,r.claim,r.yr,r.mk,r.mo,r.vin,r.odo,r.ro,svcs,r.notes||"",r.sub,r.gst,r.total,r.payStatus||"pending"]);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+(c||"").toString().replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="Mint_PDR_Ledger_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+}
+
+// ── DASHBOARD ──
+let revChart=null,cntChart=null,catChart=null;
+function renderDashboard(){
+  renderLedgerStats();
+  const L=getLedger();
+  const months={};
+  L.forEach(r=>{
+    const d=new Date(r.date);if(isNaN(d))return;
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    if(!months[key])months[key]={rev:0,cnt:0,label:d.toLocaleDateString("en-CA",{month:"short",year:"2-digit"})};
+    months[key].rev+=parseFloat(r.total||0);months[key].cnt++;
+  });
+  const mkeys=Object.keys(months).sort().slice(-12);
+  const mlabels=mkeys.map(k=>months[k].label);
+  const mrevs=mkeys.map(k=>parseFloat(months[k].rev.toFixed(2)));
+  const mcnts=mkeys.map(k=>months[k].cnt);
+
+  const svcAmt={};
+  L.forEach(r=>(r.lines||[]).forEach(l=>{const s=l.svc.split("—")[0].trim();svcAmt[s]=(svcAmt[s]||0)+parseFloat(l.amt||0);}));
+  const topSvcs=Object.entries(svcAmt).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const maxS=topSvcs[0]?topSvcs[0][1]:1;
+  document.getElementById("top-svcs").innerHTML=topSvcs.length?topSvcs.map(([n,v])=>`
+    <div class="svc-bar-row">
+      <div class="svc-bar-label"><span>${n}</span><span style="font-family:'DM Mono',monospace">$${Math.round(v).toLocaleString()}</span></div>
+      <div class="svc-bar-track"><div class="svc-bar-fill" style="width:${(v/maxS*100).toFixed(1)}%"></div></div>
+    </div>`).join(""):`<div style="color:var(--tx3);font-size:13px;padding-top:.5rem">Log invoices to see data</div>`;
+
+  const catRev={"ADAS":0,"Glass":0,"PDR":0,"Other":0};
+  L.forEach(r=>(r.lines||[]).forEach(l=>{const cat=ITEM_CAT[l.svc]||"Other";catRev[cat]=(catRev[cat]||0)+parseFloat(l.amt||0);}));
+
+  const bc={responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:"'DM Mono',monospace",size:10},color:"#9A9A93"}},y:{grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{family:"'DM Mono',monospace",size:10},color:"#9A9A93",callback:v=>"$"+v.toLocaleString()}}}};
+  if(revChart)revChart.destroy();
+  revChart=new Chart(document.getElementById("rev-chart"),{type:"bar",data:{labels:mlabels.length?mlabels:["No data"],datasets:[{data:mrevs.length?mrevs:[0],backgroundColor:"rgba(29,158,117,.15)",borderColor:"#1D9E75",borderWidth:2,borderRadius:6}]},options:bc});
+  if(cntChart)cntChart.destroy();
+  cntChart=new Chart(document.getElementById("cnt-chart"),{type:"bar",data:{labels:mlabels.length?mlabels:["No data"],datasets:[{data:mcnts.length?mcnts:[0],backgroundColor:"rgba(29,158,117,.12)",borderColor:"#1D9E75",borderWidth:2,borderRadius:6}]},options:{...bc,scales:{...bc.scales,y:{...bc.scales.y,ticks:{...bc.scales.y.ticks,callback:v=>v,stepSize:1}}}}});
+  if(catChart)catChart.destroy();
+  catChart=new Chart(document.getElementById("cat-chart"),{type:"doughnut",data:{labels:Object.keys(catRev),datasets:[{data:Object.values(catRev),backgroundColor:["#1D9E75","#5DCAA5","#9FE1CB","#D3F3E8"],borderWidth:0}]},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{family:"'DM Sans',sans-serif",size:11},padding:12,color:"#55554F"}}}}});
+}
+
+// ── TAB SWITCH ──
+function switchTab(name,btn){
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".ntab").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  if(btn)btn.classList.add("active");
+  if(name==="ledger"){renderLedgerStats();renderLedger();}
+  if(name==="dashboard")renderDashboard();
+  if(name==="settings")loadSettingsUI();
+}
+
+// ── MOBILE BOTTOM NAV ──
+function buildMobileNav(){
+  const tabs=[["invoice","Invoice"],["ledger","Ledger"],["dashboard","Charts"],["settings","Settings"],["tips","Tips"]];
+  const nav=document.createElement("div");
+  nav.id="mobile-nav";
+  nav.style.cssText="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid rgba(0,0,0,.08);z-index:300;display:none";
+  nav.innerHTML=`<div style="display:flex">${tabs.map(([id,lbl],i)=>`<button onclick="switchTab('${id}',this)" style="flex:1;padding:10px 2px 8px;background:none;border:none;border-top:2px solid transparent;font-size:10px;color:#999;font-family:'DM Sans',sans-serif;cursor:pointer" class="ntab${i===0?" active":""}">${lbl}</button>`).join("")}</div>`;
+  document.body.appendChild(nav);
+  const check=()=>{const show=window.innerWidth<=680;nav.style.display=show?"block":"none";if(show)document.querySelector(".main").style.paddingBottom="56px";else document.querySelector(".main").style.paddingBottom="5rem";};
+  check();window.addEventListener("resize",check);
+}
+
+// ── INIT ──
+(function init(){
+  const num=getNum();
+  document.getElementById("inv-num").textContent=num;
+  document.getElementById("inv-date").textContent=new Date().toLocaleDateString("en-CA",{year:"numeric",month:"long",day:"numeric"});
+  ["v-yr","v-mk","v-mo"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",autoSub);});
+  const s=getSettings();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||"";};
+  set("e-to",s.email);set("e-msg",s.msg);set("inv-notes",s.notes);
+  addLine();autoSub();renderFavChips();renderRecentVehicles();updateOverdueBadge();buildMobileNav();
+})();
+</script>
+</body>
+</html>
