@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>Restoring Mint PDR invoices...</title>
+<style>
+body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f7f7f5;flex-direction:column;gap:1rem}
+.box{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:2rem 2.5rem;text-align:center;max-width:400px}
+.mint{color:#1D9E75;font-size:22px;font-weight:500;letter-spacing:2px}
+p{color:#666;font-size:14px;line-height:1.6}
+.count{font-size:48px;font-weight:500;color:#1D9E75;font-family:monospace}
+.btn{background:#1D9E75;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-block;margin-top:1rem}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="mint">MINT</div>
+  <p>— PDR AND GLASS —</p>
+  <div class="count" id="count">...</div>
+  <p id="msg">Restoring your invoices...</p>
+  <a class="btn" id="link" href="./index.html" style="display:none">Open Invoice System →</a>
+</div>
+<script>
+try {
+  const invoices = [{"num": "#0018", "date": "June 8, 2026", "billTo": "Mint Auto Body", "claim": "DC35521-1", "yr": "2025", "mk": "", "mo": "", "vin": "2T3R1RFV3SC528448", "odo": "1077", "ro": "12465", "notes": "ACC -Tech calibrates front radar unit, checks vertical and horizontal aiming. System road tested and confirmed operational after calibration.\nBSD - Tech performs blind spot radar calibration procedure, road tests vehicle to confirm all sensors detecting correctly. System confirmed working as normal before release.", "lines": [{"svc": "ACC \u2014 Adaptive Cruise Control", "notes": "", "listPrice": 350, "amt": 280}, {"svc": "BSD \u2014 Blind Spot Detection", "notes": "", "listPrice": 450, "amt": 360}], "tax": 5, "sub": "640.00", "gst": "32.00", "total": "672.00", "payStatus": "pending"}, {"num": "#0017", "date": "June 4, 2026", "billTo": "Mint Auto Body", "claim": "", "yr": "2021", "mk": "TOYOTA", "mo": "CAMERY", "vin": "4T1B21HK1MU015745", "odo": "186384", "ro": "12476", "notes": "Tech performs blind spot radar calibration procedure, road tests vehicle to confirm all sensors detecting correctly. System confirmed working as normal before release.", "lines": [{"svc": "BSD \u2014 Blind Spot Detection", "notes": "", "listPrice": 450, "amt": 360}], "tax": 5, "sub": "360.00", "gst": "18.00", "total": "378.00", "payStatus": "pending"}, {"num": "#0016", "date": "June 4, 2026", "billTo": "Mint Auto Body", "claim": "DC35822-1", "yr": "2020", "mk": "HONDA", "mo": "CR-V", "vin": "2HKRW2H9XLH222444", "odo": "35830", "ro": "12464", "notes": "Tech calibrates front radar unit, checks vertical and horizontal aiming. System road tested and confirmed operational after calibration.", "lines": [{"svc": "ACC \u2014 Adaptive Cruise Control", "notes": "", "listPrice": 350, "amt": 280}], "tax": 5, "sub": "280.00", "gst": "14.00", "total": "294.00", "payStatus": "pending"}, {"num": "#0015", "date": "June 2, 2026", "billTo": "Mint Auto Body", "claim": "DC12468-6", "yr": "2024", "mk": "SUBARU", "mo": "ASCENT", "vin": "4S4WMAFD6R3443159", "odo": "20662", "ro": "12434", "notes": "", "lines": [{"svc": "LDW \u2014 Lane Departure Warning", "notes": "DYANAMIC & STATIC ", "listPrice": 450, "amt": 360}], "tax": 5, "sub": "360.00", "gst": "18.00", "total": "378.00", "payStatus": "pending"}, {"num": "#0014", "date": "May 26, 2026", "billTo": "Mint Auto Body", "claim": "DC00548-0", "yr": "2026", "mk": "ACURA", "mo": "MDX", "vin": "5J8YE1H09TL801111", "odo": "9669", "ro": "12457", "notes": "Calibration of rear parking sensor/sonar system. Tech confirms all sensors\ndetecting and alerting correctly.\n", "lines": [{"svc": "Parking Assist \u2014 Ultrasonic & Camera", "notes": "Park assist calibration \u2014 advance/clearance parking sensor system ", "listPrice": 225, "amt": 180}], "tax": 5, "sub": "180.00", "gst": "9.00", "total": "189.00", "payStatus": "pending"}, {"num": "#0011", "date": "May 26, 2026", "billTo": "Mint Auto Body", "claim": "DC47574-0", "yr": "", "mk": "LEXUS", "mo": "NX 350 HYBRID", "vin": "2T2GKCEZ0NC006181", "odo": "18717", "ro": "12474", "notes": "Tech performed blind spot radar calibration procedure, road tests vehicle to confirm all sensors detecting correctly. System confirmed working as normal before release.", "lines": [{"svc": "BSD \u2014 Blind Spot Detection", "notes": "Tech performed blind spot radar calibration procedure, road tests vehicle to confirm all sensors detecting correctly. System confirmed working as normal before release.", "listPrice": 450, "amt": 360}], "tax": 5, "sub": "360.00", "gst": "18.00", "total": "378.00", "payStatus": "pending"}, {"num": "#0008", "date": "May 13, 2026", "billTo": "Mint Auto Body", "claim": "DC23919-5 ", "yr": "2025", "mk": "Honda", "mo": "CR-V", "vin": "2HKRS6H99SH231752", "odo": "5204", "ro": "12454", "notes": "blind spot radar calibration procedure, road tests vehicle to confirm all sensors detecting correctly. System confirmed working as normal before release.", "lines": [{"svc": "BSD \u2014 Blind Spot Detection", "notes": "", "amt": 450}], "tax": 5, "sub": "450.00", "gst": "22.50", "total": "472.50", "payStatus": "pending"}, {"num": "#0003", "date": "May 12, 2026", "billTo": "Mint Auto Body", "claim": "DC01837-1", "yr": "", "mk": "", "mo": "Corolla", "vin": "5YFB4MBE9NP111818", "odo": "76991", "ro": "12419", "notes": "calibrate front radar unit, checks vertical and horizontal aiming. System road\ntested and confirmed operational after calibration.", "lines": [{"svc": "ACC \u2014 Adaptive Cruise Control", "notes": "ACC calibration \u2014 front radar/adaptive cruise control module", "amt": 350}], "tax": 5, "sub": "350.00", "gst": "17.50", "total": "367.50", "payStatus": "pending"}];
+  localStorage.setItem('mintLedger', JSON.stringify(invoices));
+  localStorage.setItem('mintN', '18');
+  const saved = JSON.parse(localStorage.getItem('mintLedger'));
+  document.getElementById('count').textContent = saved.length;
+  document.getElementById('msg').textContent = saved.length + ' invoices restored! Click below to open your invoice system.';
+  document.getElementById('link').style.display = 'inline-block';
+} catch(e) {
+  document.getElementById('count').textContent = '!';
+  document.getElementById('msg').textContent = 'Error: ' + e.message;
+}
+</script>
+</body>
+</html>
